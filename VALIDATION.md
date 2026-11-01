@@ -1,10 +1,14 @@
-# Validation for v1.0.0
+# Validation for v1.0.1
 
 Validated on November 1, 2026.
 
 ## Automated checks
 
-Eight passing tests cover exact AP Classroom URL matching, score parsing, partial/unscored handling, original-number sorting, safe filenames, HTML sanitization, overview extraction, reference-specific question extraction, and the manifest/dependency contract.
+Seventeen passing tests cover the existing content adapter and the same-tab regression. The original eight tests cover URL matching, score parsing, sorting, filenames, sanitization, overview extraction, reference matching, and the manifest/dependency contract.
+
+Nine additional tests exercise the source-session controller against simulated Chrome scripting and tab APIs. They cover reading from overview and detail views, reusing already-loaded questions, restoring the original route and scroll, cancellation, a closed source tab, user navigation to a different assignment, missing question links, timeouts, and suppressing native full-document link navigation. The simulated API rejects all attempts to create, remove, update, or reload a browser tab. A package contract also checks that the review does not contain those lifecycle operations, and that there is no tab-closing background worker or storage permission.
+
+The reported v1.0.0 sign-in regression came from creating a fresh AP Classroom tab. Version 1.0.1 removes that path and its direct-URL navigation fallback. It injects the adapter into the tab that was already open when the user clicked the extension.
 
 ## Local assignment validation
 
@@ -23,4 +27,4 @@ Real questions, answers, scores, and source snapshots are excluded from this rep
 
 The English preview was exercised in Chrome, including the confirmation gate and PDF generation, under the same script/image/content restrictions as the extension. A generated 35-page A4 sample was rendered and visually inspected, including section order, selected/correct markings, formulas, figures, and multi-page graph options.
 
-This validation used a development preview and local DOM snapshots. The unpacked extension has not been installed in the user's signed-in Chrome profile as part of this validation. Chrome tab/session/download orchestration therefore still needs an installed-profile smoke test. Free-response, audio/video, and interactive question formats have not been validated.
+The PDF checks above apply to the unchanged PDF renderer. The same-tab fix is validated with DOM fixtures and simulated Chrome APIs, not a newly installed-profile smoke test. Free-response, audio/video, and interactive question formats have not been validated.

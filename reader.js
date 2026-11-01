@@ -88,10 +88,32 @@
   }
   function navigate(url) {
     if (core.assignmentUrl(url) !== core.assignmentUrl(location.href)) throw new Error('Assignment changed. Start a new read.');
+    if (location.href === url) return true;
     const a = [...document.querySelectorAll('a[href]')].find(e => e.href === url);
     if (!a) return false;
-    a.click();
-    return true;
+    // Let AP Classroom's SPA router handle the click, but suppress native link
+    // navigation if the router is unavailable. A full document load can lose
+    // the in-memory sign-in session that the user already has open.
+    let routed=false;
+    const preventReload=event=>{
+      if(event.target===a||a.contains(event.target)){routed=event.defaultPrevented;event.preventDefault();}
+    };
+    document.addEventListener('click',preventReload);
+    try{a.click();}finally{document.removeEventListener('click',preventReload);}
+    return routed || location.href===url;
   }
-  scope.APReviewReader = {overview, ready, extract, navigate};
+  function view() {
+    return {url:location.href,x:window.scrollX,y:window.scrollY,
+      selectedTab:text(document.querySelector('[role="tab"][aria-selected="true"]'))};
+  }
+  function showQuestions() {
+    const tab=[...document.querySelectorAll('[role="tab"]')].find(e=>text(e)==='Questions');
+    if(tab&&tab.getAttribute('aria-selected')!=='true')tab.click();
+  }
+  function restoreView(saved) {
+    const tab=[...document.querySelectorAll('[role="tab"]')].find(e=>text(e)===saved.selectedTab);
+    if(tab&&tab.getAttribute('aria-selected')!=='true')tab.click();
+    requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(saved.x,saved.y)));
+  }
+  scope.APReviewReader = {overview, ready, extract, navigate, view, showQuestions, restoreView};
 })(globalThis);

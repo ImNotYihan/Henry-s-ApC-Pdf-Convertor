@@ -6,7 +6,7 @@
   <div class="intro"><span class="eyebrow">AP CLASSROOM REVIEW</span><h1>Review your assignment.</h1><p class="muted">Check the contents, then download your PDF. Missed questions first.</p></div>
   <ol class="steps" aria-label="Export progress"><li id="step-read" aria-current="step"><span>1</span> Read</li><li id="step-check"><span>2</span> Preview</li><li id="step-save"><span>3</span> Download</li></ol>
   <section id="loading" class="panel loading-panel" aria-labelledby="loading-title">
-    <div class="spinner" aria-hidden="true"></div><h2 id="loading-title">Reading your assignment</h2><p id="progress-text" class="muted" role="status" aria-live="polite">Connecting to AP Classroom…</p><progress id="progress" max="100" value="0"></progress><p class="small muted">Keep this review tab open. A temporary AP Classroom tab will close when reading finishes.</p><button id="cancel" class="quiet">Cancel reading</button>
+    <div class="spinner" aria-hidden="true"></div><h2 id="loading-title">Reading your assignment</h2><p id="progress-text" class="muted" role="status" aria-live="polite">Reading your open AP Classroom tab…</p><progress id="progress" max="100" value="0"></progress><p class="small muted">Keep this review tab and your signed-in assignment tab open. Questions are read in that same tab, then its original view is restored.</p><button id="cancel" class="quiet">Cancel reading</button>
   </section>
   <section id="error-panel" class="panel" hidden><span class="eyebrow">READING PAUSED</span><h2 id="error-title">Something needs attention</h2><p id="error-message" class="error" role="alert"></p><div class="button-row"><button id="retry" class="primary">Try again</button><button id="open-source" class="secondary">Open source assignment</button></div></section>
   <section id="preview" hidden>
@@ -31,5 +31,5 @@
   <footer class="page-footer">Henry's ApC-Pdf Convertor <span>Made for a clearer review.</span></footer>
 </main>
 <div id="pdf-stage" aria-hidden="true"></div>
-<script src="core.js"></script><script src="math-config.js"></script><script src="vendor/mml-svg.js"></script><script src="vendor/html2canvas.min.js"></script><script src="vendor/pdf-lib.min.js"></script><script src="pdf.js"></script><script src="review.js"></script>
+<script src="core.js"></script><script src="source-session.js"></script><script src="math-config.js"></script><script src="vendor/mml-svg.js"></script><script src="vendor/html2canvas.min.js"></script><script src="vendor/pdf-lib.min.js"></script><script src="pdf.js"></script><script src="review.js"></script>
 </body></html>

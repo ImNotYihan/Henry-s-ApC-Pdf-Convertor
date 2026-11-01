@@ -1,57 +1,15 @@
 'use strict';
 const $ = selector => document.querySelector(selector);
 const core = APReviewCore;
-let assignment = null, readerId = null, expectedBase = null, running = false, cancelled = false, exporting = false, pdfUrl = null;
+let assignment = null, sourceSession = null, running = false, cancelled = false, exporting = false, pdfUrl = null;
 const assetCache = new Map();
 const sourceId = Number(new URL(location.href).searchParams.get('source'));
 const delay = ms => new Promise(resolve=>setTimeout(resolve,ms));
 function progress(message, value) { $('#progress-text').textContent=message;$('#progress').value=value; }
 function checkCancel() { if(cancelled) throw new Error('Reading cancelled. No PDF was generated.'); }
-async function callReader(method, args=[]) {
-  const [result] = await chrome.scripting.executeScript({target:{tabId:readerId},func:(method,args,expected)=>{
-    if (!globalThis.APReviewReader) return null;
-    if (globalThis.APReviewCore.assignmentUrl(location.href) !== expected) throw new Error('The reading tab moved to a different assignment. Please start again.');
-    return globalThis.APReviewReader[method](...args);
-  },args:[method,args,expectedBase]});
-  return result?.result;
-}
-async function inject() {
-  await chrome.scripting.executeScript({target:{tabId:readerId},files:['core.js','reader.js']});
-}
-async function waitFor(read, message, timeout=45000) {
-  const end=Date.now()+timeout;
-  let lastError;
-  while(Date.now()<end) {
-    checkCancel();
-    try {
-      const tab=await chrome.tabs.get(readerId);
-      if (tab.url && !tab.url.startsWith(core.ORIGIN+'/')) throw new Error('Your AP Classroom session needs attention. Sign in on the source tab, then try again.');
-      if (tab.status === 'complete') {
-        await inject();
-        const value=await read();
-        if(value) return value;
-      }
-    } catch(e) {
-      lastError=e;
-      if (/No tab|session needs attention/i.test(e.message)) throw e;
-    }
-    await delay(500);
-  }
-  throw new Error(message + (lastError ? '\n'+lastError.message : ''));
-}
-async function navigate(url) {
-  checkCancel();
-  let clicked=false;
-  try { clicked=await callReader('navigate',[url]); } catch { /* A page navigation may destroy the old script. */ }
-  if(!clicked) await chrome.tabs.update(readerId,{url});
-}
-async function closeReader() {
-  if(readerId != null) {
-    const id=readerId;readerId=null;
-    await chrome.tabs.remove(id).catch(()=>{});
-    await chrome.runtime.sendMessage({type:'release-reader'}).catch(()=>{});
-  }
-}
+const callReader = (method,args=[]) => sourceSession.call(method,args);
+const inject = () => sourceSession.inject();
+const waitFor = (read,message,timeout) => sourceSession.waitFor(read,message,timeout);
 async function fetchImage(src) {
   if(/^data:image\/(png|jpeg|gif|webp);base64,/i.test(src)) return src;
   const url=new URL(src,core.ORIGIN);
@@ -99,33 +57,23 @@ async function startRead() {
   $('#preview').hidden=true;$('#error-panel').hidden=true;$('#loading').hidden=false;
   $('#step-read').setAttribute('aria-current','step');$('#step-check').removeAttribute('aria-current');$('#step-save').removeAttribute('aria-current');
   try {
-    progress('Opening a temporary reading tab…',2);
-    const source=await chrome.tabs.get(sourceId);
-    const base=core.assignmentUrl(source.url);
-    if(!base) throw new Error('The source tab is no longer a completed AP Classroom assignment. Open the extension from Results Overview again.');
-    expectedBase=base;
-    const owner=await chrome.tabs.getCurrent();
-    const reader=await chrome.tabs.create({url:base,active:false,openerTabId:owner.id});readerId=reader.id;
-    const owned=await chrome.runtime.sendMessage({type:'own-reader',readerId});
-    if(!owned?.ok) throw new Error(owned?.error||'Could not create a reading session.');
-    let overview=await waitFor(async()=>{
-      const result=await callReader('overview');
-      return result?.questions?.length ? result : null;
-    },'The question table did not load. Make sure the Questions tab is available and your teacher has released the results.');
+    progress('Reading your already-open assignment tab…',2);
+    sourceSession=new APReviewSourceSession(chrome,core);
+    await sourceSession.open(sourceId);
+    let overview=await sourceSession.getOverview();
     // A result table may populate over multiple render frames.
     await delay(500);
     const stable=await callReader('overview');if(stable?.questions?.length>=overview.questions.length)overview=stable;
     if(overview.questions.some(q=>!q.reference)) progress('Reading questions individually…',8);
     else progress(`Found ${overview.questions.length} questions. Loading their contents…`,8);
     assignment={...overview,readAt:new Date().toISOString(),questions:[]};
-    await navigate(overview.questions[0].url);
     for(let i=0;i<overview.questions.length;i++) {
       checkCancel();const record=overview.questions[i];
       progress(`Reading question ${record.number} · ${i+1} of ${overview.questions.length}`,10+(i/overview.questions.length)*78);
       let q=null;
       try {await inject();q=await callReader('extract',[record]);} catch { /* The initial detail page may still be loading. */ }
       if(!q) {
-        if(i>0) await navigate(record.url);
+        await sourceSession.openQuestion(record.url);
         q=await waitFor(()=>callReader('extract',[record]),`Question ${record.number} did not load. Nothing will be exported until every question is read.`);
       }
       try { await freezeQuestion(q); } catch(e) {throw new Error(`Question ${record.number}: a figure could not be embedded.\n${e.message}\nTry reading again when the connection is stable.`);}
@@ -139,7 +87,14 @@ async function startRead() {
   } catch(e) {
     assignment=null;$('#loading').hidden=true;$('#error-panel').hidden=false;
     $('#error-message').textContent=e.message || String(e);
-  } finally {await closeReader();running=false;}
+  } finally {
+    const restoreNote=sourceSession?await sourceSession.restore():'';
+    if(restoreNote){
+      if(assignment){$('#read-warning').hidden=false;$('#read-warning').textContent=restoreNote;}
+      else $('#error-message').textContent+='\n'+restoreNote;
+    }
+    sourceSession=null;running=false;
+  }
 }
 function contentHTML(q, answers=true) {
   let html=q.shared||'';
@@ -210,7 +165,7 @@ async function renderPreview() {
 function invalidatePdf(){if(pdfUrl){URL.revokeObjectURL(pdfUrl);pdfUrl=null;}$('#download-again').hidden=true;}
 $('#confirm').addEventListener('change',()=>assignment&&counts());
 $('#show-answers').addEventListener('change',()=>{invalidatePdf();});
-$('#cancel').addEventListener('click',()=>{cancelled=true;closeReader();});
+$('#cancel').addEventListener('click',()=>{cancelled=true;sourceSession?.cancel();});
 $('#retry').addEventListener('click',startRead);$('#reread').addEventListener('click',()=>{invalidatePdf();startRead();});
 $('#open-source').addEventListener('click',()=>chrome.tabs.update(sourceId,{active:true}).catch(()=>{}));
 $('#expand').addEventListener('click',()=>{const open=$('#expand').textContent==='Expand all';document.querySelectorAll('.question-row').forEach(e=>e.open=open);$('#expand').textContent=open?'Collapse all':'Expand all';});

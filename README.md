@@ -12,11 +12,17 @@ A small, English-only Chrome extension for reviewing **completed AP Classroom as
 
 No build step is needed. The rendering libraries are bundled locally. This is an unpacked extension, not a Chrome Web Store listing.
 
+### Update from v1.0.0
+
+Download the latest release. Either replace the contents of your existing unpacked extension folder and click **Reload** in `chrome://extensions`, or remove the old extension and load the newly extracted folder. Keep your already signed-in AP Classroom assignment tab open while updating.
+
+Version 1.0.1 fixes the repeated sign-in bug by reading your existing assignment tab. It never opens a new AP Classroom tab or loads an assignment URL as a fresh document.
+
 ## Use
 
 1. Sign in to AP Classroom and open a completed assignment's **Results Overview** or **Question Details** page.
 2. Open the extension and click **Read assignment**.
-3. Keep the review tab open while a temporary AP Classroom tab reads the assignment. Your original tab is preserved.
+3. Keep the review tab and your already signed-in AP Classroom tab open. The extension reads that existing tab, using the site's own question links when needed. When reading finishes or is cancelled, it restores the original question/overview and scroll position where possible. Avoid navigating that tab yourself while reading.
 4. Check the question count and results. Expand any question to inspect its text, options, figures, and answers. You can correct the result category in the preview.
 5. Confirm **I checked the preview. The questions and results are correct.**
 6. Click **Generate & download PDF** and choose where to save it.
@@ -29,7 +35,7 @@ The PDF preserves original question numbers. Partial-credit questions go in **Mi
 - The Learnosity question format currently used by AP Classroom, with exact question-reference matching.
 - Multiple-choice stems and options, selected and revealed correct answers, tables, MathML formulas, and figures hosted on `assets.learnosity.com`.
 - A concise, expandable preview and two-section A4 PDF, with page numbers.
-- Cancellation, retry, missing-image errors, and automatic cleanup of the temporary reading tab.
+- Cancellation, retry, missing-image errors, and restoration of the existing source page. The extension never closes your AP Classroom tab.
 
 The current release is validated against a 37-question multiple-choice assignment. Free-response and interactive/media questions are flagged for manual inspection; their response formats vary and are not fully supported. Teacher-hidden answers and unreleased results cannot be supplied. Changes to AP Classroom's page structure may require an adapter update. If a question or figure cannot be read, export stops with an actionable message.
 
@@ -37,15 +43,14 @@ PDF content is rendered at double resolution to preserve formulas and page appea
 
 ## Privacy and permissions
 
-There is no backend, account, analytics, AI API, or cloud upload. Assignment content lives in the review tab's memory and is cleared when that tab closes. A small `chrome.storage.session` record tracks temporary-tab ownership only; it does not store questions or scores. Your own signed-in AP Classroom session loads the pages normally. The extension does not inspect cookies or credentials.
+There is no backend, account, analytics, AI API, or cloud upload. Assignment content lives in the review tab's memory and is cleared when that tab closes. The extension uses your already-open AP Classroom document and its existing sign-in state. It does not inspect cookies or credentials and does not use extension storage.
 
 | Permission | Purpose |
 | --- | --- |
 | `activeTab` | Identify the assignment you opened the extension from. |
 | `scripting` | Read assignment content from the AP Classroom page. |
-| AP Classroom host | Read a temporary assignment tab while keeping your original tab intact. |
+| AP Classroom host | Read your already-open assignment tab and its in-page question navigation. |
 | Learnosity asset host | Embed question figures in the local PDF. |
-| `storage` | Track and clean up the temporary reading tab. |
 | `downloads` | Open Chrome's save dialog for the generated PDF. |
 
 Only the two named hosts are permitted. No all-sites, browsing-history, debugger, or cookie permission is requested. Use exported materials for your personal study and follow your school's and College Board's rules. This project is independent of College Board.
@@ -62,10 +67,10 @@ npm test
 The extension itself runs without installing npm packages. Reload it in `chrome://extensions` after editing the source.
 
 - `reader.js`: AP Classroom overview and Learnosity DOM adapter.
+- `source-session.js`: existing-tab reading, safe in-page navigation, cancellation, and view restoration.
 - `core.js`: URL validation, score classification, grouping, and inert HTML sanitization.
 - `review.js`: local extraction session, preview, image embedding, and download.
 - `pdf.js`: two-section PDF layout and rendering.
-- `background.js`: temporary-tab ownership and cleanup.
 - `tests/`: synthetic tests; no real questions or student data are included.
 
 ## Bundled dependencies

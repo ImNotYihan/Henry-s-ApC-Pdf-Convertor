@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Henry's ApC-Pdf Convertor",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Turn your completed AP Classroom assignments into review PDFs, with missed questions first.",
   "minimum_chrome_version": "120",
-  "permissions": ["activeTab", "scripting", "storage", "downloads"],
+  "permissions": ["activeTab", "scripting", "downloads"],
   "host_permissions": ["https://apclassroom.collegeboard.org/*", "https://assets.learnosity.com/*"],
   "action": {
     "default_popup": "popup.html",
@@ -12,7 +12,6 @@
     "default_icon": {"16": "icons/16.png", "32": "icons/32.png"}
   },
   "icons": {"16": "icons/16.png", "32": "icons/32.png", "48": "icons/48.png", "128": "icons/128.png"},
-  "background": {"service_worker": "background.js"},
   "content_security_policy": {
     "extension_pages": "script-src 'self'; object-src 'none'; base-uri 'none'; connect-src 'self' https://assets.learnosity.com; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self' data:"
   }
