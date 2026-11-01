@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Review · Henry's ApC-Pdf Convertor</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="topbar"><div class="brand"><img src="icons/32.png" width="28" height="28" alt=""><span>HENRY'S <b>ApC-Pdf Convertor</b></span></div><span class="local-badge"><i></i> Local to your browser</span></header>
+<main class="workspace">
+  <div class="intro"><span class="eyebrow">AP CLASSROOM REVIEW</span><h1>Review your assignment.</h1><p class="muted">Check the contents, then download your PDF. Missed questions first.</p></div>
+  <ol class="steps" aria-label="Export progress"><li id="step-read" aria-current="step"><span>1</span> Read</li><li id="step-check"><span>2</span> Preview</li><li id="step-save"><span>3</span> Download</li></ol>
+  <section id="loading" class="panel loading-panel" aria-labelledby="loading-title">
+    <div class="spinner" aria-hidden="true"></div><h2 id="loading-title">Reading your assignment</h2><p id="progress-text" class="muted" role="status" aria-live="polite">Connecting to AP Classroom…</p><progress id="progress" max="100" value="0"></progress><p class="small muted">Keep this review tab open. A temporary AP Classroom tab will close when reading finishes.</p><button id="cancel" class="quiet">Cancel reading</button>
+  </section>
+  <section id="error-panel" class="panel" hidden><span class="eyebrow">READING PAUSED</span><h2 id="error-title">Something needs attention</h2><p id="error-message" class="error" role="alert"></p><div class="button-row"><button id="retry" class="primary">Try again</button><button id="open-source" class="secondary">Open source assignment</button></div></section>
+  <section id="preview" hidden>
+    <div class="assignment-heading"><div><span class="eyebrow">ASSIGNMENT PREVIEW</span><h2 id="assignment-title"></h2><p class="muted" id="assignment-meta"></p></div><button id="reread" class="secondary">Read again</button></div>
+    <div class="stats"><div><span id="total-count">0</span><p>Questions read</p></div><div class="missed-stat"><span id="missed-count">0</span><p>To review first</p></div><div><span id="correct-count">0</span><p>Correct</p></div></div>
+    <p id="read-warning" class="notice" hidden></p>
+    <div class="preview-grid"><div>
+      <div class="list-toolbar"><h3>Check the contents</h3><button id="expand" class="text-button">Expand all</button></div>
+      <div id="question-list"></div>
+    </div><aside class="panel export-panel">
+      <span class="eyebrow">YOUR PDF</span><h2>Ready for review.</h2>
+      <div class="section-preview"><span>01</span><div><strong>Missed questions</strong><p>Including partial credit</p></div></div>
+      <div class="section-preview"><span>02</span><div><strong>Correct questions</strong><p>For a quick refresher</p></div></div>
+      <div class="divider"></div>
+      <label class="check-row"><input id="show-answers" type="checkbox" checked><span>Include my answers and the revealed correct answers</span></label>
+      <label class="check-row confirm-row"><input id="confirm" type="checkbox"><span>I checked the preview. The questions and results are correct.</span></label>
+      <button id="export" class="primary" disabled>Generate & download PDF <span aria-hidden="true">↓</span></button>
+      <p id="export-status" class="small muted" role="status" aria-live="polite">Confirm the preview to continue.</p><a id="download-again" class="download-link" hidden>Download PDF again</a>
+      <p class="small muted">A4 pages · Original question numbers<br>No account or cloud upload</p>
+    </aside></div>
+  </section>
+  <footer class="page-footer">Henry's ApC-Pdf Convertor <span>Made for a clearer review.</span></footer>
+</main>
+<div id="pdf-stage" aria-hidden="true"></div>
+<script src="core.js"></script><script src="math-config.js"></script><script src="vendor/mml-svg.js"></script><script src="vendor/html2canvas.min.js"></script><script src="vendor/pdf-lib.min.js"></script><script src="pdf.js"></script><script src="review.js"></script>
+</body></html>
