@@ -2,7 +2,7 @@
 const $ = selector => document.querySelector(selector);
 const core = APReviewCore;
 let assignment = null, sourceSession = null, running = false, cancelled = false, exporting = false, pdfUrl = null;
-const assetCache = new Map();
+const assetImages = APReviewImages.createStore();
 const sourceId = Number(new URL(location.href).searchParams.get('source'));
 const delay = ms => new Promise(resolve=>setTimeout(resolve,ms));
 function progress(message, value) { $('#progress-text').textContent=message;$('#progress').value=value; }
@@ -10,34 +10,11 @@ function checkCancel() { if(cancelled) throw new Error('Reading cancelled. No PD
 const callReader = (method,args=[]) => sourceSession.call(method,args);
 const inject = () => sourceSession.inject();
 const waitFor = (read,message,timeout) => sourceSession.waitFor(read,message,timeout);
-async function fetchImage(src) {
-  if(/^data:image\/(png|jpeg|gif|webp);base64,/i.test(src)) return src;
-  const url=new URL(src,core.ORIGIN);
-  if(url.protocol!=='https:' || url.hostname!=='assets.learnosity.com') throw new Error('This image host is not supported: '+url.hostname);
-  if(!assetCache.has(url.href)) {
-    const pending=(async()=>{
-      const response=await fetch(url.href,{credentials:'omit',redirect:'error',signal:AbortSignal.timeout(20000)});
-      if(!response.ok) throw new Error('Image download failed ('+response.status+').');
-      const blob=await response.blob();
-      if(blob.size>15*1024*1024) throw new Error('An image is too large to embed.');
-      // Decode and re-encode to PNG. This also safely supports original SVG figures
-      // without allowing active SVG markup into the extension.
-      const bitmap=await createImageBitmap(blob);
-      if(bitmap.width*bitmap.height>25000000) {bitmap.close();throw new Error('An image is too large to render.');}
-      const canvas=document.createElement('canvas');canvas.width=bitmap.width;canvas.height=bitmap.height;
-      canvas.getContext('2d').drawImage(bitmap,0,0);bitmap.close();
-      return canvas.toDataURL('image/png');
-    })();
-    assetCache.set(url.href,pending);
-    pending.catch(()=>assetCache.delete(url.href));
-  }
-  return assetCache.get(url.href);
-}
 async function freezeHTML(value) {
   const t=document.createElement('template');t.innerHTML=value;
   for(const img of t.content.querySelectorAll('img')) {
     checkCancel();
-    img.setAttribute('src',await fetchImage(img.getAttribute('src')||''));
+    img.setAttribute('src',await assetImages.load(img.getAttribute('src')||''));
     img.removeAttribute('srcset');
   }
   return core.cleanHTML(t.innerHTML);
@@ -76,7 +53,8 @@ async function startRead() {
         await sourceSession.openQuestion(record.url);
         q=await waitFor(()=>callReader('extract',[record]),`Question ${record.number} did not load. Nothing will be exported until every question is read.`);
       }
-      try { await freezeQuestion(q); } catch(e) {throw new Error(`Question ${record.number}: a figure could not be embedded.\n${e.message}\nTry reading again when the connection is stable.`);}
+      if(q.unsupportedReasons?.length)throw new Error(`Question ${record.number} cannot be exported completely.\n${q.unsupportedReasons.join('\n')}\nNo incomplete PDF was generated.`);
+      try { await freezeQuestion(q); } catch(e) {throw new Error(`Question ${record.number}: a figure could not be embedded.\n${e.message}\nNo incomplete PDF was generated. Check this figure in the source assignment, then try again.`);}
       assignment.questions.push(q);
     }
     if(assignment.questions.length!==overview.questions.length) throw new Error('The question count changed during reading. Please try again.');

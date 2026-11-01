@@ -6,6 +6,7 @@ const core=require('../core.js');
 test('only accepts completed assignment result routes on the exact AP Classroom origin',()=>{
   const expected='https://apclassroom.collegeboard.org/33/assessments/results/123/performance';
   assert.equal(core.assignmentUrl(expected+'/456'),expected);
+  assert.equal(core.assignmentUrl('https://apclassroom.collegeboard.org/18/assessments/results/987/performance/654'),'https://apclassroom.collegeboard.org/18/assessments/results/987/performance');
   for(const url of ['https://apclassroom.collegeboard.org.evil.test/33/assessments/results/123/performance','http://apclassroom.collegeboard.org/33/assessments/results/123/performance','https://apclassroom.collegeboard.org/33/assignments','javascript:alert(1)'])assert.equal(core.assignmentUrl(url),null);
 });
 test('distinguishes full credit, partial credit, zero, and unknown scores',()=>{
@@ -48,5 +49,16 @@ test('manifest keeps host access narrow and bundles all executable dependencies'
   const manifest=require('../manifest.json');assert.equal(manifest.manifest_version,3);assert.equal(manifest.name,"Henry's ApC-Pdf Convertor");
   assert.deepEqual(manifest.host_permissions,['https://apclassroom.collegeboard.org/*','https://assets.learnosity.com/*']);
   assert.ok(!manifest.permissions.includes('debugger'));assert.ok(!manifest.permissions.includes('cookies'));
-  for(const file of ['vendor/mml-svg.js','vendor/html2canvas.min.js','vendor/pdf-lib.min.js','icons/128.png'])assert.ok(fs.existsSync(path.resolve(__dirname,'..',file)));
+  for(const file of ['asset-images.js','source-session.js','vendor/mml-svg.js','vendor/html2canvas.min.js','vendor/pdf-lib.min.js','icons/128.png'])assert.ok(fs.existsSync(path.resolve(__dirname,'..',file)));
+  const html=fs.readFileSync(path.resolve(__dirname,'../review.html'),'utf8');assert.ok(html.indexOf('src="asset-images.js"')<html.indexOf('src="review.js"'));
+});
+test('preserves live written responses and numeric zero without copying hidden fields',()=>{
+  const reader=readerFixture('<div class="learnosity-item" data-reference="FRQ"><div class="lrn_widget lrn_qr lrn_longtext"><div class="lrn_stimulus_content">Explain the result.</div><div class="lrn_response"><textarea aria-label="Part A">My explanation\non two lines</textarea><input type="text" aria-label="Part B" value="0"><input type="hidden" value="private-internal-field"></div></div></div>');
+  const q=reader.extract({reference:'FRQ',number:1});
+  assert.ok(q.parts[0].response.includes('My explanation\non two lines'));assert.ok(q.parts[0].response.includes('Part B: 0'));
+  assert.ok(!q.parts[0].response.includes('private-internal-field'));assert.equal(q.unsupportedReasons.length,0);
+});
+test('flags media questions instead of silently claiming that a static PDF contains the entire question',()=>{
+  const reader=readerFixture('<div class="learnosity-item" data-reference="MEDIA"><div class="lrn_widget lrn_qr"><div class="lrn_stimulus_content">Listen to the recording.</div><audio src="recording.mp3"></audio><div class="lrn_response">My response</div></div></div>');
+  const q=reader.extract({reference:'MEDIA',number:1});assert.ok(q.unsupportedReasons.some(reason=>reason.includes('audio or video')));
 });

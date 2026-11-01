@@ -12,11 +12,13 @@ A small, English-only Chrome extension for reviewing **completed AP Classroom as
 
 No build step is needed. The rendering libraries are bundled locally. This is an unpacked extension, not a Chrome Web Store listing.
 
-### Update from v1.0.0
+### Update from an earlier version
 
-Download the latest release. Either replace the contents of your existing unpacked extension folder and click **Reload** in `chrome://extensions`, or remove the old extension and load the newly extracted folder. Keep your already signed-in AP Classroom assignment tab open while updating.
+Download the latest release. Either replace the contents of your existing unpacked extension folder and click **Reload** in `chrome://extensions`, or remove the old extension and load the newly extracted folder. Close old review pages and open the updated extension again so they do not keep running the previous scripts. Keep your already signed-in AP Classroom assignment tab open while updating.
 
 Version 1.0.1 fixes the repeated sign-in bug by reading your existing assignment tab. It never opens a new AP Classroom tab or loads an assignment URL as a fresh document.
+
+Version 1.0.2 fixes SVG figure decoding across assignments. It loads figures through Chrome's image-element decoder and converts them to inert PNGs for export. This is a format adapter, with no assignment IDs, question numbers, or question-specific exceptions. It also preserves values from ordinary written/numeric response controls instead of dropping them from HTML snapshots.
 
 ## Use
 
@@ -33,11 +35,12 @@ The PDF preserves original question numbers. Partial-credit questions go in **Mi
 
 - Completed assignment result URLs on `apclassroom.collegeboard.org`.
 - The Learnosity question format currently used by AP Classroom, with exact question-reference matching.
-- Multiple-choice stems and options, selected and revealed correct answers, tables, MathML formulas, and figures hosted on `assets.learnosity.com`.
+- Multiple-choice stems and options, selected and revealed correct answers, tables, MathML formulas, and SVG/PNG/JPEG/GIF/WebP figures hosted on `assets.learnosity.com`.
+- Static written/numeric responses from ordinary form controls. FRQ variants still require checking the full response in the preview.
 - A concise, expandable preview and two-section A4 PDF, with page numbers.
 - Cancellation, retry, missing-image errors, and restoration of the existing source page. The extension never closes your AP Classroom tab.
 
-The current release is validated against a 37-question multiple-choice assignment. Free-response and interactive/media questions are flagged for manual inspection; their response formats vary and are not fully supported. Teacher-hidden answers and unreleased results cannot be supplied. Changes to AP Classroom's page structure may require an adapter update. If a question or figure cannot be read, export stops with an actionable message.
+The adapter is shared across assignments and subjects that use this results format. It has been checked against two completed multiple-choice assignments with 77 questions in total, plus synthetic written/numeric response fixtures. This does **not** establish compatibility with every AP Classroom assignment or subject. It requires completed results and released question content; it does not grade active assignments or reveal teacher-hidden answers. FRQ formats beyond ordinary text/numeric controls are not fully validated. Audio, video, embedded frames, and interactive canvas questions stop export with an explicit explanation rather than silently producing a PDF missing those components. Changes to AP Classroom's page structure may require an adapter update.
 
 PDF content is rendered at double resolution to preserve formulas and page appearance. Question text is rasterized rather than selectable or searchable. Very long questions continue on subsequent pages; ordinary questions are kept together when they fit.
 
@@ -68,6 +71,7 @@ The extension itself runs without installing npm packages. Reload it in `chrome:
 
 - `reader.js`: AP Classroom overview and Learnosity DOM adapter.
 - `source-session.js`: existing-tab reading, safe in-page navigation, cancellation, and view restoration.
+- `asset-images.js`: format-independent browser image decoding, SVG support, and PNG embedding.
 - `core.js`: URL validation, score classification, grouping, and inert HTML sanitization.
 - `review.js`: local extraction session, preview, image embedding, and download.
 - `pdf.js`: two-section PDF layout and rendering.

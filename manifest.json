@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Henry's ApC-Pdf Convertor",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Turn your completed AP Classroom assignments into review PDFs, with missed questions first.",
   "minimum_chrome_version": "120",
   "permissions": ["activeTab", "scripting", "downloads"],

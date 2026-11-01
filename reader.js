@@ -45,6 +45,21 @@
   }
   function normalize(node) {
     const clone = node.cloneNode(true);
+    // Form-control values are live DOM properties, not reliable outerHTML.
+    // Preserve written/numeric responses as inert text across subjects.
+    const originals=[...node.querySelectorAll('input,textarea,select')];
+    [...clone.querySelectorAll('input,textarea,select')].forEach((control,index)=>{
+      const original=originals[index],kind=(original.getAttribute('type')||'').toLowerCase();
+      if(['hidden','button','submit','reset','file','password'].includes(kind)||original.hasAttribute('hidden')||original.getAttribute('aria-hidden')==='true'){control.remove();return;}
+      if(['radio','checkbox'].includes(kind)&&!original.checked){control.remove();return;}
+      const label=original.getAttribute('aria-label')||'Response';
+      const value=original.tagName==='SELECT'
+        ? [...original.querySelectorAll('option')].filter(o=>o.selected).map(o=>text(o)).join(', ')
+        : ['radio','checkbox'].includes(kind)?'Selected':original.value;
+      const output=node.ownerDocument.createElement('pre');
+      output.textContent=label+': '+(value==null||value===''?'Not answered':value);
+      control.replaceWith(output);
+    });
     // The accessible MathML is self-contained; the page's MathJax CHTML is not.
     for (const math of clone.querySelectorAll('mjx-container,.MathJax,.MathJax_SVG,.MathJax_CHTML')) {
       const mml = math.querySelector('math');
@@ -84,7 +99,10 @@
     const missingAnswer = parts.some(p => p.options.length && !p.options.some(o=>o.correct));
     if (missingAnswer) warnings.push('The page has not revealed the correct answer for this question.');
     if (root.querySelector('audio,video,canvas')) warnings.push('Interactive or media content needs a manual check.');
-    return {...record, shared, parts, warnings};
+    const unsupportedReasons=[];
+    if(root.querySelector('audio,video'))unsupportedReasons.push('This question includes audio or video that a static PDF cannot reproduce.');
+    if(root.querySelector('canvas,iframe,object,embed'))unsupportedReasons.push('This question contains an embedded or interactive component that cannot be captured completely.');
+    return {...record, shared, parts, warnings, unsupportedReasons};
   }
   function navigate(url) {
     if (core.assignmentUrl(url) !== core.assignmentUrl(location.href)) throw new Error('Assignment changed. Start a new read.');

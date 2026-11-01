@@ -1,30 +1,31 @@
-# Validation for v1.0.1
+# Validation for v1.0.2
 
 Validated on November 1, 2026.
 
-## Automated checks
+## Automated regression suite
 
-Seventeen passing tests cover the existing content adapter and the same-tab regression. The original eight tests cover URL matching, score parsing, sorting, filenames, sanitization, overview extraction, reference matching, and the manifest/dependency contract.
+All 27 tests pass. Coverage includes URL and score parsing, reference matching, safe HTML, question ordering, existing-tab reading/restoration/cancellation, failure without a new sign-in tab, SVG MIME detection, raster image caching, failed-image cleanup, dimensions/size limits, HTTP failures, and host restrictions.
 
-Nine additional tests exercise the source-session controller against simulated Chrome scripting and tab APIs. They cover reading from overview and detail views, reusing already-loaded questions, restoring the original route and scroll, cancellation, a closed source tab, user navigation to a different assignment, missing question links, timeouts, and suppressing native full-document link navigation. The simulated API rejects all attempts to create, remove, update, or reload a browser tab. A package contract also checks that the review does not contain those lifecycle operations, and that there is no tab-closing background worker or storage permission.
+Static textarea and numeric responses are also checked, including preserving numeric zero and excluding hidden form fields. Audio/video questions are explicitly flagged as incomplete for a static PDF rather than silently exported without their required content.
 
-The reported v1.0.0 sign-in regression came from creating a fresh AP Classroom tab. Version 1.0.1 removes that path and its direct-URL navigation fallback. It injects the adapter into the tab that was already open when the user clicked the extension.
+## Assignment-independent extraction
 
-## Local assignment validation
+Two local snapshots of completed assignments were checked:
 
-Against a local DOM sample of a completed multiple-choice assignment:
+| Sample | Questions | Options | Formulas | Missed / correct |
+| --- | --- | --- | --- | --- |
+| A | 37 | 148 | 58 | 2 / 35 |
+| B | 40 | 160 | 83 | 8 / 32 |
+| Total | 77 | 308 | 141 | 10 / 67 |
 
-- All 37 question references matched their overview records.
-- All 148 answer options were captured.
-- Each question's selected and revealed correct answer was captured.
-- The two missed questions matched the overview's zero scores.
-- All 58 MathML formulas were preserved for local rendering.
-- Fifteen question figures were embedded in the preview/PDF.
+Every question reference, selected answer, revealed correct answer, and overview score matched. No assignment ID, question number, subject title, or figure-specific exception is used in the adapters. Real questions, answer keys, source snapshots, figures, and generated study PDFs are excluded from this repository and release.
 
-Real questions, answers, scores, and source snapshots are excluded from this repository and release archive.
+## Actual Chrome image/PDF checks
 
-## Browser and PDF validation
+The reported decoder failure was reproduced on all four SVG answer figures in sample B: the old `createImageBitmap(blob)` path rejected them with the same error as the report. The replacement image-element decoder converted and reloaded all 32 unique figures from that assignment. Additional PNG, JPEG, GIF, and WebP fixtures also passed, for 36 successful real-browser image conversions in total. Browser tests used the extension's packaged decoder code and the same script/image content-security restrictions.
 
-The English preview was exercised in Chrome, including the confirmation gate and PDF generation, under the same script/image/content restrictions as the extension. A generated 35-page A4 sample was rendered and visually inspected, including section order, selected/correct markings, formulas, figures, and multi-page graph options.
+Sample B's full 40-question preview and 39-page A4 PDF were generated in a local Chrome development preview. All PDF pages were rendered and visually inspected, including the four previously failing SVG histograms, section order, selected/correct markings, tables, and formulas. The prior 37-question PDF was also visually checked. This is real decoder/rendering validation using private local test data, not a claim that every installed-profile workflow has been tested.
 
-The PDF checks above apply to the unchanged PDF renderer. The same-tab fix is validated with DOM fixtures and simulated Chrome APIs, not a newly installed-profile smoke test. Free-response, audio/video, and interactive question formats have not been validated.
+## Support boundary
+
+These checks do **not** prove compatibility with every AP Classroom assignment or subject. The extension requires completed, released results using the supported Learnosity results interface. It does not grade active assignments or reveal hidden content. Only ordinary static written/numeric FRQ controls have fixture coverage; other FRQ formats have not been fully validated. Audio/video, embedded frames, interactive canvas questions, unknown page structures, and unsupported image hosts stop export instead of producing an incomplete review document. An installed-profile smoke test for the updated package remains separate from the local browser validation above.
