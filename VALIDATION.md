@@ -12,11 +12,11 @@ Static textarea and numeric responses are also checked, including preserving num
 
 Two local snapshots of completed assignments were checked:
 
-| Sample | Questions | Options | Formulas | Missed / correct |
-| --- | --- | --- | --- | --- |
-| A | 37 | 148 | 58 | 2 / 35 |
-| B | 40 | 160 | 83 | 8 / 32 |
-| Total | 77 | 308 | 141 | 10 / 67 |
+| Sample | Questions | Options | Formulas |
+| --- | --- | --- | --- |
+| A | 37 | 148 | 58 |
+| B | 40 | 160 | 83 |
+| Total | 77 | 308 | 141 |
 
 Every question reference, selected answer, revealed correct answer, and overview score matched. No assignment ID, question number, subject title, or figure-specific exception is used in the adapters. Real questions, answer keys, source snapshots, figures, and generated study PDFs are excluded from this repository and release.
 
